@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title> Map Pick Provider</title>
+
+    <style>
+      .demo {
+        width: 500px;
+      }
+      table {
+        border-collapse: collapse;
+        border: 2px solid rgb(200,200,200);
+        font-size: 0.8em;
+    }
+    
+    th {
+        border: 1px solid rgb(190,190,190);
+    }
+    
+    th[scope="row"] {
+        background-color: #696969;
+        color: #fff;
+    }
+    
+  
+  
+      #usage {
+        font-family: Consolas, Menlo, Monaco, monospace;
+        background-color: #2A242D;
+        color: #FDFBFB;
+        font-size: 12px;
+      }
+    </style>
+</head>
+<body>
+   <div>
+    Map Pick Provider
+   </div>
+
+   <div id ="image">
+   <img src="/static/higashiyamaG.png" id="map" />
+   </div>
+   
+  
+   <button id="getMenu"> menu </button> 
+
+   <br />
+   <br />
+   <div>
+    <table class="mtbl" id="menutable">
+      <tr>
+        <th>No. </th> <th> Shop </th> <th> Item </th> <th> Price </th>
+      </tr>
+    </table>
+  </div>
+
+   <script>
+    var map = document.getElementById('map');
+    var clickState = 0;
+    var dd = [];
+    var conn;
+   
+    map.onclick = function pfunc(evt){
+//      console.log("map clicked",clickState, evt.clientX, evt.clientY);//,evt);
+      dd.push({
+        x: evt.clientX,
+        y: evt.clientY
+      })
+      clickState += 1;
+    
+      if( clickState == 2){
+        var st = JSON.stringify(dd);
+        console.log("send click2!"+st);
+        conn.send("click2!"+st);
+        dd = [];
+        clickState = 0;
+      }
+    };
+
+    (function(){
+        var mtbl = document.getElementById('menutable');
+        function setItem(items){
+            console.log("SetItem:",items);
+            var row = mtbl.insertRow(-1);
+            var td = row.insertCell(-1)
+        }
+        function connect(){
+            console.log("Connecting!","ws://"+document.location.host+"/ws")
+            conn = new WebSocket("ws://"+document.location.host+"/ws");
+            conn.onclose = function(evt){
+              console.log("WS Closed");
+              setTimeout(function(){  // retry connect
+                connect();
+              }, 1000);
+            }
+            conn.onopen = function(evt){
+              console.log("WS Connected");
+              conn.send("getall"); // send get current menu data!
+            }
+            conn.onmessage = function(evt){
+                console.log("Event:",event.data);
+                // we need to set Menu items.
+                var cmloc = event.data.indexOf(',');
+                var cmd = event.data.substring(0,cmloc);
+                if (cmd=='order'){
+                    var js  = JSON.parse(event.data.substring(cmloc+1));
+                    setItem(js);
+                }else {
+                    console.log("Other Command:",cmd);
+
+                }
+
+            }
+        }
+        var userMenu = document.getElementById('getMenu');
+        userMenu.addEventListener('click', function(){
+          console.log("Do menu!")
+          fetch("http://"+document.location.host+"/menu").then( data => data.text()).then(
+            data => console.log(data));
+        });
+        console.log("start function");
+        connect();
+        console.log("end function");
+    })();
+
+
+
+   </script>
+</body>
+</html>
