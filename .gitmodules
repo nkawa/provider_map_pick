@@ -1,0 +1,6 @@
+[submodule "pyscript/api"]
+	path = pyscript/api
+	url = https://github.com/synerex/synerex_api
+[submodule "pyscript/cav"]
+	path = pyscript/cav
+	url = https://github.com/synerex/proto_cav
