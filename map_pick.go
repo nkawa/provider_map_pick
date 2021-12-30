@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -52,18 +53,13 @@ func routeCallback(clt *sxutil.SXServiceClient, sp *sxapi.Supply) {
 			log.Print(err)
 		}
 		log.Printf("[INFO/robot] receive route robot %d", rcd.RobotId)
-		//		id := int(rcd.RobotId)
-		/*
-			if rob, ok := robotList[id]; ok {
-				rob.SetPath(rcd)
-				jsonbyte, err := robot.MakePathMsg(rcd)
-				if err != nil {
-					log.Print(err)
-				} else {
-					robot.SendPath(id, jsonbyte, syMqttClient)
-				}
-			}
-		*/
+		log.Printf("route length %d", len(rcd.Path))
+
+		b, _ := json.Marshal(rcd.Path)
+		cmd := []byte("route,")
+		cmd = append(cmd, b...)
+		mainWs.broadcast <- cmd // broadcast route!
+
 	}
 }
 
@@ -104,7 +100,7 @@ func (ws *WSServ) run() {
 				close(client.send)
 			}
 		case message := <-ws.broadcast: // broadcasting to all clients.
-			log.Printf("Broadcasting!", message, len(ws.clients))
+			log.Printf("Broadcasting! %d bytes to %d clients", len(message), len(ws.clients))
 			for client := range ws.clients {
 				select { // non-blocking send
 				case client.send <- message:
@@ -163,11 +159,11 @@ func (c *WClient) messageHandler(msg []byte) {
 			log.Print(err)
 		}
 		cout := sxapi.Content{Entity: out}
-		smo := sxutil.SupplyOpts{
+		dmo := sxutil.DemandOpts{
 			Name:  "RouteDemand",
 			Cdata: &cout,
 		}
-		_, err = sxClient.NotifySupply(&smo)
+		_, err = sxClient.NotifyDemand(&dmo)
 		if err != nil {
 			log.Print(err)
 			//			sxutil.reconnectClient(sxClient, sxServerAddress, &mu)
@@ -273,6 +269,12 @@ func index(ctx *gin.Context) {
 	ctx.HTML(200, "index.html", gin.H{"data": "Hello"})
 }
 
+func subscribeRouteSupply() {
+	ctx := context.Background()
+	sxClient.SubscribeSupply(ctx, routeCallback)
+	log.Printf("Subscribe error")
+}
+
 // Map Pick provider main
 func main() {
 	flag.Parse()
@@ -319,7 +321,7 @@ func main() {
 
 	wg.Add(1)
 	log.Print("Subscribe Supply")
-	//	go subscribeOrderSupply(geClient)
+	go subscribeRouteSupply()
 
 	router := gin.Default()
 	execBin, _ := os.Executable()

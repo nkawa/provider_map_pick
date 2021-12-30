@@ -37,35 +37,39 @@
    <div>
     Map Pick Provider
    </div>
+   <div>
+     <label>SelectMap</label>
+     <select name="maps" id="maps">
+       <option value="/static/higashi.png">Higashiyama</option>
+       <option value="/static/projection_edit.png">Planet Tokai</option>
+       <option value="/static/pTokai.png">Planet Tokai Rev</option>
+     </select>
+   </div>
 
-   <div id ="image">
-   <img src="/static/higashiyamaG.png" id="map" />
+   <div id ="image" style="position:relative">
+    <img src="/static/higashi.png" id="map" />
+    <canvas id="imgCanvas" width="1600" height="1050" style="position:absolute;left:0px;top:0px">
+    </canvas>
    </div>
    
-  
-   <button id="getMenu"> menu </button> 
-
    <br />
-   <br />
-   <div>
-    <table class="mtbl" id="menutable">
-      <tr>
-        <th>No. </th> <th> Shop </th> <th> Item </th> <th> Price </th>
-      </tr>
-    </table>
-  </div>
 
    <script>
-    var map = document.getElementById('map');
+    var map = document.getElementById('imgCanvas');
     var clickState = 0;
     var dd = [];
     var conn;
+
+    var resolution = 1;
+    var cx = -8;
+    var cy = -55;
+
    
     map.onclick = function pfunc(evt){
 //      console.log("map clicked",clickState, evt.clientX, evt.clientY);//,evt);
       dd.push({
-        x: evt.clientX,
-        y: evt.clientY
+        x: Math.round(evt.clientX*resolution+cx),
+        y: Math.round(evt.clientY*resolution+cy),
       })
       clickState += 1;
     
@@ -78,13 +82,20 @@
       }
     };
 
+    var maps = document.getElementById('maps');
+    maps.addEventListener('change', function(ev){
+      console.log("Maps select change src:",maps.selectedIndex,ev);
+      map.src = maps.options[maps.selectedIndex].value;
+    });
+    
+
     (function(){
-        var mtbl = document.getElementById('menutable');
-        function setItem(items){
-            console.log("SetItem:",items);
-            var row = mtbl.insertRow(-1);
-            var td = row.insertCell(-1)
-        }
+        var c2d = document.getElementById('imgCanvas').getContext('2d');
+        console.log("2d",c2d);
+        c2d.lineWidth=2;
+        c2d.lineCap= "round";
+        c2d.strokeStyle = 'red';
+
         function connect(){
             console.log("Connecting!","ws://"+document.location.host+"/ws")
             conn = new WebSocket("ws://"+document.location.host+"/ws");
@@ -103,22 +114,25 @@
                 // we need to set Menu items.
                 var cmloc = event.data.indexOf(',');
                 var cmd = event.data.substring(0,cmloc);
-                if (cmd=='order'){
+                if (cmd=='route'){
+                    console.log("Got Route")
                     var js  = JSON.parse(event.data.substring(cmloc+1));
-                    setItem(js);
+//                    console.log("Got",js)
+                    // draw lines on map jpg...
+                    var p = js[0].pose
+                    c2d.beginPath();
+                    c2d.moveTo(p.x, p.y);
+                    for (var i = 1; i < js.length; i ++){
+                      p = js[i].pose
+                      c2d.lineTo(p.x, p.y);
+                    }
+                    c2d.stroke();
                 }else {
                     console.log("Other Command:",cmd);
-
                 }
 
             }
         }
-        var userMenu = document.getElementById('getMenu');
-        userMenu.addEventListener('click', function(){
-          console.log("Do menu!")
-          fetch("http://"+document.location.host+"/menu").then( data => data.text()).then(
-            data => console.log(data));
-        });
         console.log("start function");
         connect();
         console.log("end function");
