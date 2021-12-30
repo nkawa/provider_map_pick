@@ -10,11 +10,12 @@ Picking image map and send routing demand
 サンプル routing provider
 - https://github.com/nkawa/provider_pgm_astar_routing
 
-
 使用チャンネル
 - ROUTING_SERVICE
 
 使用プロトコル
 - proto_cav
+
+サブディレクトリ pyscript には、python から routing request を送る仕組みのサンプルあり。
 
 
