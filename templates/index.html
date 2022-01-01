@@ -55,7 +55,8 @@
    <br />
 
    <script>
-    var map = document.getElementById('imgCanvas');
+    var mapsrc = document.getElementById('map');    
+    var canvas = document.getElementById('imgCanvas');
     var clickState = 0;
     var dd = [];
     var conn;
@@ -65,7 +66,7 @@
     var cy = -55;
 
    
-    map.onclick = function pfunc(evt){
+    canvas.onclick = function pfunc(evt){
 //      console.log("map clicked",clickState, evt.clientX, evt.clientY);//,evt);
       dd.push({
         x: Math.round(evt.clientX*resolution+cx),
@@ -84,8 +85,9 @@
 
     var maps = document.getElementById('maps');
     maps.addEventListener('change', function(ev){
-      console.log("Maps select change src:",maps.selectedIndex,ev);
-      map.src = maps.options[maps.selectedIndex].value;
+//      console.log("Maps select change src:",maps.selectedIndex,ev);
+      console.log("SetImgFile:",maps.options[maps.selectedIndex].value);
+      mapsrc.src = maps.options[maps.selectedIndex].value;
     });
     
 
